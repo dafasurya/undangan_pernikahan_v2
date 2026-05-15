@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undangan Pernikahan</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Cinzel:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f8f3ec;
+    --gold: #c9a96e;
+    --gold-light: #e8d5b0;
+    --brown: #5c3d2e;
+    --brown-dark: #3b2314;
+    --rose: #d4a0a0;
+    --rose-light: #f0e0e0;
+    --text: #4a3428;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cormorant Garamond', serif;
+    background: var(--cream);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ===== TIRAI VIDEO OVERLAY ===== */
+
+  /* Konten utama langsung tampil di bawah */
+  #main-content {
+    opacity: 1; /* tampil sejak awal, tirai di overlay-kan di atasnya */
+  }
+
+  /* Wrapper video overlay — di atas konten, transparan bg */
+  #curtain-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: all;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  /* Video tirai — mix-blend-mode:multiply menghapus hijau (greenscreen → transparan) */
+  #curtain-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    /* multiply: hijau terang (#00ff00) × background = background terlihat
+       tirai merah tetap opak karena merah gelap tidak multiply ke transparan */
+    mix-blend-mode: multiply;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Latar hitam di belakang video agar multiply bekerja di awal (tirai tertutup) */
+  #curtain-bg {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    z-index: 1;
+    transition: opacity 0.05s ease;
+  }
+
+  /* Tombol & teks overlay di atas video */
+  .curtain-center {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    text-align: center;
+    width: 90%;
+    max-width: 420px;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+
+  .curtain-center.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .curtain-center h1 {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(3rem, 10vw, 5.5rem);
+    color: var(--gold-light);
+    text-shadow: 0 0 40px rgba(201,169,110,0.7), 0 2px 10px rgba(0,0,0,0.8);
+    margin-bottom: 0.8rem;
+    line-height: 1.1;
+  }
+
+  .curtain-center p {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.6rem, 1.8vw, 0.85rem);
+    color: var(--gold-light);
+    letter-spacing: 0.45em;
+    opacity: 0.95;
+    margin-bottom: 2.5rem;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+  }
+
+  .open-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    color: var(--brown-dark);
+    background: linear-gradient(135deg, #f0ddb0, var(--gold), #e8d090, var(--gold));
+    background-size: 200% 200%;
+    border: none;
+    padding: 14px 38px;
+    cursor: pointer;
+    pointer-events: all;
+    border-radius: 50px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.55), inset 0 1px 1px rgba(255,255,255,0.3);
+    transition: transform 0.3s, box-shadow 0.3s;
+    animation: shimmerBtn 3s ease infinite;
+  }
+
+  @keyframes shimmerBtn {
+    0%,100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+
+  .open-btn:hover {
+    transform: scale(1.06) translateY(-2px);
+    box-shadow: 0 8px 32px rgba(201,169,110,0.5);
+  }
+
+  /* Overlay selesai — fade out dan hilang */
+  #curtain-overlay.done {
+    transition: opacity 0.6s ease;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Section base */
+  section {
+    position: relative;
+    padding: 80px 20px;
+    text-align: center;
+  }
+
+  /* ===== CORNER ORNAMENTS ===== */
+  .corner-ornament {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .corner-ornament.top-left { top: 0; left: 0; }
+  .corner-ornament.top-right { top: 0; right: 0; transform: scaleX(-1); }
+  .corner-ornament.bottom-left { bottom: 0; left: 0; transform: scaleY(-1); }
+  .corner-ornament.bottom-right { bottom: 0; right: 0; transform: scale(-1,-1); }
+
+  /* ===== HERO SECTION ===== */
+  #hero {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #f8f3ec 0%, #f0e8d8 50%, #e8d8c0 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+  }
+
+  #hero .bismillah {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    color: var(--gold);
+    font-style: italic;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  #hero .wedding-of {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.65rem, 1.5vw, 0.85rem);
+    letter-spacing: 0.5em;
+    color: var(--brown);
+    margin-bottom: 1rem;
+    opacity: 0.8;
+  }
+
+  #hero h1 {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(3.5rem, 10vw, 7rem);
+    color: var(--brown-dark);
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  #hero .ampersand {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2rem, 6vw, 4rem);
+    color: var(--gold);
+    display: block;
+    margin: -10px 0;
+  }
+
+  #hero .invitation-text {
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    color: var(--brown);
+    font-style: italic;
+    margin-top: 2rem;
+    line-height: 1.8;
+    max-width: 500px;
+  }
+
+  .divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    margin: 1.5rem auto;
+  }
+
+  .divider-rose {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: center;
+    margin: 2rem 0;
+  }
+
+  .divider-rose .line {
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold));
+  }
+
+  .divider-rose .line.reverse {
+    background: linear-gradient(to left, transparent, var(--gold));
+  }
+
+  /* ===== ORANG TUA SECTION ===== */
+  #orangtua {
+    background: #fff9f2;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-heading {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    color: var(--brown-dark);
+    margin-bottom: 2.5rem;
+  }
+
+  .orangtua-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    align-items: center;
+  }
+
+  .orangtua-card {
+    background: white;
+    border-radius: 16px;
+    padding: 30px 25px;
+    box-shadow: 0 4px 30px rgba(92,61,46,0.08);
+    border: 1px solid var(--gold-light);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .orangtua-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(to right, var(--gold-light), var(--gold), var(--gold-light));
+  }
+
+  .orangtua-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+  }
+
+  .orangtua-putra-putri {
+    font-size: 0.85rem;
+    color: var(--brown);
+    font-style: italic;
+    margin-bottom: 0.5rem;
+  }
+
+  .orangtua-nama-ayah, .orangtua-nama-ibu {
+    font-family: 'Great Vibes', cursive;
+    font-size: 2rem;
+    color: var(--brown-dark);
+    line-height: 1.3;
+  }
+
+  .orangtua-nama-ibu {
+    font-size: 1.8rem;
+  }
+
+  .orangtua-divider { color: var(--gold); font-size: 1.2rem; margin: 8px 0; }
+
+  .vs-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vs-divider .line-v {
+    width: 1px;
+    height: 50px;
+    background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  }
+
+  .vs-divider .heart {
+    color: var(--gold);
+    font-size: 1.5rem;
+  }
+
+  /* ===== FOTO SECTION ===== */
+  #foto {
+    background: linear-gradient(160deg, #f8f3ec, #f0e8d8);
+  }
+
+  .foto-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .foto-frame {
+    position: relative;
+    border-radius: 50%;
+    width: 220px;
+    height: 220px;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    padding: 6px;
+    box-shadow: 0 8px 40px rgba(92,61,46,0.2);
+  }
+
+  .foto-frame .foto-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #e8d8c0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: 'Great Vibes', cursive;
+    font-size: 4rem;
+    color: var(--brown);
+  }
+
+  .foto-frame .foto-nama {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Great Vibes', cursive;
+    font-size: 1.8rem;
+    color: var(--brown-dark);
+    white-space: nowrap;
+  }
+
+  .foto-and {
+    font-family: 'Great Vibes', cursive;
+    font-size: 5rem;
+    color: var(--gold);
+    margin-top: -20px;
+  }
+
+  .foto-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  /* ===== TANGGAL SECTION ===== */
+  #tanggal {
+    background: var(--brown-dark);
+    color: var(--gold-light);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #tanggal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(201,169,110,0.1) 0%, transparent 70%);
+  }
+
+  #tanggal .section-title { color: var(--gold-light); opacity: 0.7; }
+  #tanggal .section-heading { color: var(--gold-light); }
+
+  .countdown-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+  }
+
+  .countdown-box {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 12px;
+    padding: 20px 25px;
+    min-width: 90px;
+    backdrop-filter: blur(4px);
+  }
+
+  .countdown-box .number {
+    font-family: 'Cinzel', serif;
+    font-size: 2.5rem;
+    color: var(--gold-light);
+    display: block;
+    line-height: 1;
+  }
+
+  .countdown-box .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    opacity: 0.6;
+    margin-top: 5px;
+    display: block;
+    font-family: 'Cinzel', serif;
+  }
+
+  .tanggal-display {
+    margin: 1.5rem 0;
+  }
+
+  .tanggal-display .hari {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    letter-spacing: 0.4em;
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+  }
+
+  .tanggal-display .tanggal {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(3rem, 8vw, 5rem);
+    color: var(--gold-light);
+    line-height: 1;
+  }
+
+  .tanggal-display .tahun {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    letter-spacing: 0.5em;
+    opacity: 0.8;
+    margin-top: 0.5rem;
+  }
+
+  /* ===== LOKASI SECTION ===== */
+  #lokasi {
+    background: #fff9f2;
+  }
+
+  .lokasi-card {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 40px 35px;
+    box-shadow: 0 8px 40px rgba(92,61,46,0.1);
+    border: 1px solid var(--gold-light);
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .lokasi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 60px rgba(92,61,46,0.18);
+  }
+
+  .lokasi-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .lokasi-nama {
+    font-family: 'Great Vibes', cursive;
+    font-size: 2.5rem;
+    color: var(--brown-dark);
+    margin-bottom: 0.5rem;
+  }
+
+  .lokasi-alamat {
+    font-size: 1rem;
+    color: var(--brown);
+    line-height: 1.7;
+    font-style: italic;
+    margin-bottom: 1.5rem;
+  }
+
+  .lokasi-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--brown), var(--brown-dark));
+    color: var(--gold-light);
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    transition: transform 0.2s;
+  }
+
+  .lokasi-card:hover .lokasi-btn {
+    transform: scale(1.05);
+  }
+
+  .waktu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    max-width: 500px;
+    margin: 2rem auto;
+  }
+
+  .waktu-item {
+    background: white;
+    border: 1px solid var(--gold-light);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(92,61,46,0.06);
+  }
+
+  .waktu-item .waktu-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .waktu-item .waktu-jam {
+    font-family: 'Great Vibes', cursive;
+    font-size: 1.8rem;
+    color: var(--brown-dark);
+  }
+
+  /* ===== KONFIRMASI SECTION ===== */
+  #konfirmasi {
+    background: linear-gradient(160deg, #f8f3ec, #f0e8d8);
+  }
+
+  .konfirmasi-form {
+    max-width: 550px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 24px;
+    padding: 45px 40px;
+    box-shadow: 0 12px 60px rgba(92,61,46,0.12);
+    border: 1px solid var(--gold-light);
+  }
+
+  .form-group {
+    margin-bottom: 22px;
+    text-align: left;
+  }
+
+  .form-label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--brown);
+    margin-bottom: 8px;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1.5px solid var(--gold-light);
+    border-radius: 12px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+    appearance: none;
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a96e' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    cursor: pointer;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.1);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--brown), var(--brown-dark));
+    color: var(--gold-light);
+    border: none;
+    border-radius: 50px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 20px rgba(59,35,20,0.3);
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(59,35,20,0.4);
+  }
+
+  .ucapan-list {
+    max-width: 600px;
+    margin: 2rem auto 0;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+  }
+
+  .ucapan-item {
+    background: white;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 12px;
+    border-left: 3px solid var(--gold);
+    box-shadow: 0 2px 15px rgba(92,61,46,0.06);
+    text-align: left;
+  }
+
+  .ucapan-item .ucapan-nama {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 5px;
+  }
+
+  .ucapan-item .ucapan-hadir {
+    font-size: 0.75rem;
+    color: var(--brown);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .ucapan-item .ucapan-pesan {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  /* ===== PENUTUP SECTION ===== */
+  #penutup {
+    background: var(--brown-dark);
+    color: var(--gold-light);
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #penutup::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(201,169,110,0.08) 0%, transparent 70%);
+  }
+
+  #penutup .penutup-quote {
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    line-height: 1.9;
+    font-style: italic;
+    max-width: 500px;
+    margin: 0 auto 2rem;
+    opacity: 0.85;
+  }
+
+  #penutup .penutup-thanks {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+  }
+
+  #penutup .nama-pasangan {
+    font-family: 'Great Vibes', cursive;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--gold);
+  }
+
+  /* ===== FLORAL SVG ORNAMENT ===== */
+  .floral-svg {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  /* ===== SCROLLBAR CUSTOM ===== */
+  .ucapan-list::-webkit-scrollbar { width: 4px; }
+  .ucapan-list::-webkit-scrollbar-track { background: #f1e8dc; }
+  .ucapan-list::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-float { animation: float 4s ease-in-out infinite; }
+
+  .fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease forwards;
+  }
+
+  .delay-1 { animation-delay: 0.2s; }
+  .delay-2 { animation-delay: 0.4s; }
+  .delay-3 { animation-delay: 0.6s; }
+
+  /* Music player */
+  .music-player {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--brown-dark);
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--gold-light);
+    font-size: 1.4rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: transform 0.3s;
+  }
+
+  .music-player:hover { transform: scale(1.1); }
+
+  @media (max-width: 600px) {
+    .orangtua-grid { grid-template-columns: 1fr; }
+    .vs-divider { flex-direction: row; }
+    .vs-divider .line-v { width: 50px; height: 1px; background: linear-gradient(to right, transparent, var(--gold), transparent); }
+    .foto-and { font-size: 3rem; }
+    .konfirmasi-form { padding: 30px 20px; }
+    .waktu-grid { grid-template-columns: 1fr; }
+  }
+
+  .success-msg {
+    display: none;
+    background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+    border: 1px solid #a5d6a7;
+    border-radius: 12px;
+    padding: 20px;
+    color: #2e7d32;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-style: italic;
+    margin-top: 15px;
+  }
+
+  /* Petal animation */
+  .petal {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    border-radius: 50% 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+    animation: petalFall linear forwards;
+  }
+
+  @keyframes petalFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 0.8; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TIRAI VIDEO OVERLAY ===== -->
+<div id="curtain-overlay">
+  <!-- Latar hitam agar tirai merah terlihat saat awal -->
+  <div id="curtain-bg"></div>
+  <!-- Video tirai buka — greenscreen dihapus via mix-blend-mode:multiply -->
+  <video id="curtain-video" playsinline muted preload="auto" src="tirai_buka.mp4"></video>
+</div>
+
+<!-- Teks & tombol buka undangan -->
+<div class="curtain-center" id="curtainCenter">
+  <p class="fade-in-up delay-1">— UNDANGAN PERNIKAHAN —</p>
+  <h1 class="fade-in-up delay-2">Arjuna & Sinta</h1>
+  <div class="divider" style="background:linear-gradient(to right,transparent,rgba(232,213,176,0.5),transparent)"></div>
+  <button class="open-btn fade-in-up delay-3" onclick="openCurtain()">
+    ✦ Buka Undangan ✦
+  </button>
+</div>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div id="main-content">
+
+  <!-- HERO -->
+  <section id="hero">
+    <!-- Corner ornaments -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140">
+      <g fill="none" stroke="#c9a96e" stroke-width="0.8" opacity="0.6">
+        <path d="M5,5 Q40,5 40,40"/>
+        <path d="M5,5 Q5,40 40,40"/>
+        <circle cx="40" cy="40" r="4" fill="#c9a96e"/>
+      </g>
+      <!-- Rose cluster top-left -->
+      <g transform="translate(0,0)">
+        <ellipse cx="25" cy="25" rx="18" ry="25" fill="#d4a0a0" transform="rotate(-30 25 25)" opacity="0.5"/>
+        <ellipse cx="40" cy="15" rx="15" ry="22" fill="#c9a96e" transform="rotate(20 40 15)" opacity="0.5"/>
+        <ellipse cx="12" cy="40" rx="14" ry="20" fill="#e8d5b0" transform="rotate(-50 12 40)" opacity="0.5"/>
+        <circle cx="27" cy="26" r="8" fill="#a0706a" opacity="0.5"/>
+        <ellipse cx="60" cy="20" rx="8" ry="22" fill="#6b8f5e" transform="rotate(15 60 20)" opacity="0.4"/>
+        <ellipse cx="10" cy="70" rx="7" ry="20" fill="#5a7a4e" transform="rotate(-10 10 70)" opacity="0.4"/>
+        <!-- small buds -->
+        <ellipse cx="70" cy="45" rx="6" ry="9" fill="#d4a0a0" transform="rotate(25 70 45)" opacity="0.5"/>
+        <ellipse cx="45" cy="75" rx="5" ry="8" fill="#c9a96e" transform="rotate(-20 45 75)" opacity="0.5"/>
+      </g>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140">
+      <g fill="none" stroke="#c9a96e" stroke-width="0.8" opacity="0.6">
+        <path d="M5,5 Q40,5 40,40"/>
+        <path d="M5,5 Q5,40 40,40"/>
+        <circle cx="40" cy="40" r="4" fill="#c9a96e"/>
+      </g>
+      <g transform="translate(0,0)">
+        <ellipse cx="25" cy="25" rx="18" ry="25" fill="#d4a0a0" transform="rotate(-30 25 25)" opacity="0.5"/>
+        <ellipse cx="40" cy="15" rx="15" ry="22" fill="#c9a96e" transform="rotate(20 40 15)" opacity="0.5"/>
+        <ellipse cx="12" cy="40" rx="14" ry="20" fill="#e8d5b0" transform="rotate(-50 12 40)" opacity="0.5"/>
+        <circle cx="27" cy="26" r="8" fill="#a0706a" opacity="0.5"/>
+        <ellipse cx="60" cy="20" rx="8" ry="22" fill="#6b8f5e" transform="rotate(15 60 20)" opacity="0.4"/>
+        <ellipse cx="10" cy="70" rx="7" ry="20" fill="#5a7a4e" transform="rotate(-10 10 70)" opacity="0.4"/>
+        <ellipse cx="70" cy="45" rx="6" ry="9" fill="#d4a0a0" transform="rotate(25 70 45)" opacity="0.5"/>
+        <ellipse cx="45" cy="75" rx="5" ry="8" fill="#c9a96e" transform="rotate(-20 45 75)" opacity="0.5"/>
+      </g>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140">
+      <g fill="none" stroke="#c9a96e" stroke-width="0.8" opacity="0.6">
+        <path d="M5,5 Q40,5 40,40"/>
+        <path d="M5,5 Q5,40 40,40"/>
+        <circle cx="40" cy="40" r="4" fill="#c9a96e"/>
+      </g>
+      <g transform="translate(0,0)">
+        <ellipse cx="25" cy="25" rx="18" ry="25" fill="#d4a0a0" transform="rotate(-30 25 25)" opacity="0.5"/>
+        <ellipse cx="40" cy="15" rx="15" ry="22" fill="#c9a96e" transform="rotate(20 40 15)" opacity="0.5"/>
+        <ellipse cx="12" cy="40" rx="14" ry="20" fill="#e8d5b0" transform="rotate(-50 12 40)" opacity="0.5"/>
+        <circle cx="27" cy="26" r="8" fill="#a0706a" opacity="0.5"/>
+        <ellipse cx="60" cy="20" rx="8" ry="22" fill="#6b8f5e" transform="rotate(15 60 20)" opacity="0.4"/>
+        <ellipse cx="10" cy="70" rx="7" ry="20" fill="#5a7a4e" transform="rotate(-10 10 70)" opacity="0.4"/>
+        <ellipse cx="70" cy="45" rx="6" ry="9" fill="#d4a0a0" transform="rotate(25 70 45)" opacity="0.5"/>
+        <ellipse cx="45" cy="75" rx="5" ry="8" fill="#c9a96e" transform="rotate(-20 45 75)" opacity="0.5"/>
+      </g>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140">
+      <g fill="none" stroke="#c9a96e" stroke-width="0.8" opacity="0.6">
+        <path d="M5,5 Q40,5 40,40"/>
+        <path d="M5,5 Q5,40 40,40"/>
+        <circle cx="40" cy="40" r="4" fill="#c9a96e"/>
+      </g>
+      <g transform="translate(0,0)">
+        <ellipse cx="25" cy="25" rx="18" ry="25" fill="#d4a0a0" transform="rotate(-30 25 25)" opacity="0.5"/>
+        <ellipse cx="40" cy="15" rx="15" ry="22" fill="#c9a96e" transform="rotate(20 40 15)" opacity="0.5"/>
+        <ellipse cx="12" cy="40" rx="14" ry="20" fill="#e8d5b0" transform="rotate(-50 12 40)" opacity="0.5"/>
+        <circle cx="27" cy="26" r="8" fill="#a0706a" opacity="0.5"/>
+        <ellipse cx="60" cy="20" rx="8" ry="22" fill="#6b8f5e" transform="rotate(15 60 20)" opacity="0.4"/>
+        <ellipse cx="10" cy="70" rx="7" ry="20" fill="#5a7a4e" transform="rotate(-10 10 70)" opacity="0.4"/>
+        <ellipse cx="70" cy="45" rx="6" ry="9" fill="#d4a0a0" transform="rotate(25 70 45)" opacity="0.5"/>
+        <ellipse cx="45" cy="75" rx="5" ry="8" fill="#c9a96e" transform="rotate(-20 45 75)" opacity="0.5"/>
+      </g>
+    </svg>
+
+    <p class="bismillah animate-float">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم</p>
+    <div class="divider"></div>
+    <p class="wedding-of">— UNDANGAN PERNIKAHAN —</p>
+    <h1>Arjuna</h1>
+    <span class="ampersand">&</span>
+    <h1>Sinta</h1>
+    <div class="divider-rose">
+      <div class="line"></div>
+      <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 2 C10 2 14 6 14 10 C14 14 10 18 10 18 C10 18 6 14 6 10 C6 6 10 2 10 2Z" fill="#c9a96e"/></svg>
+      <div class="line reverse"></div>
+    </div>
+    <p class="invitation-text">
+      Dengan memohon rahmat dan ridho Allah Subhanahu Wa Ta'ala,<br>
+      kami mengundang Bapak/Ibu/Saudara/i<br>
+      untuk hadir dan memberikan doa restu<br>
+      pada acara pernikahan kami.
+    </p>
+  </section>
+
+  <!-- ORANG TUA -->
+  <section id="orangtua">
+    <!-- Corner ornaments -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140">
+      <g transform="translate(0,0)">
+        <ellipse cx="30" cy="30" rx="22" ry="30" fill="#d4a0a0" transform="rotate(-25 30 30)" opacity="0.4"/>
+        <ellipse cx="50" cy="15" rx="18" ry="26" fill="#c9a96e" transform="rotate(15 50 15)" opacity="0.4"/>
+        <circle cx="32" cy="30" r="10" fill="#a0706a" opacity="0.4"/>
+        <ellipse cx="70" cy="25" rx="9" ry="26" fill="#6b8f5e" transform="rotate(10 70 25)" opacity="0.35"/>
+        <ellipse cx="15" cy="75" rx="8" ry="24" fill="#5a7a4e" transform="rotate(-8 15 75)" opacity="0.35"/>
+      </g>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140">
+      <g transform="translate(0,0)">
+        <ellipse cx="30" cy="30" rx="22" ry="30" fill="#d4a0a0" transform="rotate(-25 30 30)" opacity="0.4"/>
+        <ellipse cx="50" cy="15" rx="18" ry="26" fill="#c9a96e" transform="rotate(15 50 15)" opacity="0.4"/>
+        <circle cx="32" cy="30" r="10" fill="#a0706a" opacity="0.4"/>
+        <ellipse cx="70" cy="25" rx="9" ry="26" fill="#6b8f5e" transform="rotate(10 70 25)" opacity="0.35"/>
+        <ellipse cx="15" cy="75" rx="8" ry="24" fill="#5a7a4e" transform="rotate(-8 15 75)" opacity="0.35"/>
+      </g>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140">
+      <g transform="translate(0,0)">
+        <ellipse cx="30" cy="30" rx="22" ry="30" fill="#d4a0a0" transform="rotate(-25 30 30)" opacity="0.4"/>
+        <ellipse cx="50" cy="15" rx="18" ry="26" fill="#c9a96e" transform="rotate(15 50 15)" opacity="0.4"/>
+        <circle cx="32" cy="30" r="10" fill="#a0706a" opacity="0.4"/>
+        <ellipse cx="70" cy="25" rx="9" ry="26" fill="#6b8f5e" transform="rotate(10 70 25)" opacity="0.35"/>
+        <ellipse cx="15" cy="75" rx="8" ry="24" fill="#5a7a4e" transform="rotate(-8 15 75)" opacity="0.35"/>
+      </g>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140">
+      <g transform="translate(0,0)">
+        <ellipse cx="30" cy="30" rx="22" ry="30" fill="#d4a0a0" transform="rotate(-25 30 30)" opacity="0.4"/>
+        <ellipse cx="50" cy="15" rx="18" ry="26" fill="#c9a96e" transform="rotate(15 50 15)" opacity="0.4"/>
+        <circle cx="32" cy="30" r="10" fill="#a0706a" opacity="0.4"/>
+        <ellipse cx="70" cy="25" rx="9" ry="26" fill="#6b8f5e" transform="rotate(10 70 25)" opacity="0.35"/>
+        <ellipse cx="15" cy="75" rx="8" ry="24" fill="#5a7a4e" transform="rotate(-8 15 75)" opacity="0.35"/>
+      </g>
+    </svg>
+
+    <p class="section-title">MEMPELAI</p>
+    <h2 class="section-heading">Keluarga Kami</h2>
+
+    <div class="orangtua-grid">
+      <!-- Mempelai Pria -->
+      <div class="orangtua-card">
+        <p class="orangtua-label">✦ MEMPELAI PRIA ✦</p>
+        <div class="divider" style="width:60px;margin:0.8rem auto"></div>
+        <p class="orangtua-putra-putri">Putra dari</p>
+        <div class="orangtua-nama-ayah">Bapak Ahmad Sulaiman</div>
+        <div class="orangtua-divider">& </div>
+        <div class="orangtua-nama-ibu">Ibu Siti Rahayu</div>
+        <div class="divider" style="width:60px;margin:1rem auto 0.5rem"></div>
+        <p style="font-family:'Great Vibes',cursive;font-size:2.5rem;color:var(--brown-dark)">Arjuna</p>
+        <p style="font-size:0.85rem;font-style:italic;color:var(--brown);opacity:0.8">Putra ke-1</p>
+      </div>
+
+      <!-- Divider -->
+      <div class="vs-divider">
+        <div class="line-v"></div>
+        <svg width="40" height="40" viewBox="0 0 40 40">
+          <path d="M20 8 C20 8 28 14 28 20 C28 26 20 32 20 32 C20 32 12 26 12 20 C12 14 20 8 20 8Z" fill="#c9a96e"/>
+          <circle cx="20" cy="20" r="4" fill="#fff"/>
+        </svg>
+        <div class="line-v"></div>
+      </div>
+
+      <!-- Mempelai Wanita -->
+      <div class="orangtua-card">
+        <p class="orangtua-label">✦ MEMPELAI WANITA ✦</p>
+        <div class="divider" style="width:60px;margin:0.8rem auto"></div>
+        <p class="orangtua-putra-putri">Putri dari</p>
+        <div class="orangtua-nama-ayah">Bapak Hendra Wijaya</div>
+        <div class="orangtua-divider">&</div>
+        <div class="orangtua-nama-ibu">Ibu Dewi Kusuma</div>
+        <div class="divider" style="width:60px;margin:1rem auto 0.5rem"></div>
+        <p style="font-family:'Great Vibes',cursive;font-size:2.5rem;color:var(--brown-dark)">Sinta</p>
+        <p style="font-size:0.85rem;font-style:italic;color:var(--brown);opacity:0.8">Putri ke-2</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOTO MEMPELAI -->
+  <section id="foto">
+    <!-- Corner ornaments -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140" opacity="0.5">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#d4a0a0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#c9a96e" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#a0706a"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#6b8f5e" transform="rotate(12 78 28)"/>
+      <ellipse cx="18" cy="80" rx="9" ry="28" fill="#5a7a4e" transform="rotate(-8 18 80)"/>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140" opacity="0.5">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#d4a0a0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#c9a96e" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#a0706a"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#6b8f5e" transform="rotate(12 78 28)"/>
+      <ellipse cx="18" cy="80" rx="9" ry="28" fill="#5a7a4e" transform="rotate(-8 18 80)"/>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140" opacity="0.5">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#d4a0a0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#c9a96e" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#a0706a"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#6b8f5e" transform="rotate(12 78 28)"/>
+      <ellipse cx="18" cy="80" rx="9" ry="28" fill="#5a7a4e" transform="rotate(-8 18 80)"/>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140" opacity="0.5">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#d4a0a0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#c9a96e" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#a0706a"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#6b8f5e" transform="rotate(12 78 28)"/>
+      <ellipse cx="18" cy="80" rx="9" ry="28" fill="#5a7a4e" transform="rotate(-8 18 80)"/>
+    </svg>
+
+    <p class="section-title">KAMI BERDUA</p>
+    <h2 class="section-heading">The Couple</h2>
+
+    <div class="foto-container">
+      <div class="foto-wrapper">
+        <div class="foto-frame">
+          <div class="foto-inner">
+            <!-- Placeholder - ganti dengan foto asli -->
+            <svg width="120" height="140" viewBox="0 0 120 140" style="opacity:0.4">
+              <circle cx="60" cy="45" r="28" fill="#5c3d2e"/>
+              <path d="M10 120 Q10 85 60 85 Q110 85 110 120" fill="#5c3d2e"/>
+            </svg>
+          </div>
+        </div>
+        <p class="foto-nama" style="margin-top:45px">Arjuna</p>
+      </div>
+
+      <div class="foto-and">✦</div>
+
+      <div class="foto-wrapper">
+        <div class="foto-frame" style="background:linear-gradient(135deg,#d4a0a0,#c9a96e)">
+          <div class="foto-inner">
+            <!-- Placeholder - ganti dengan foto asli -->
+            <svg width="120" height="140" viewBox="0 0 120 140" style="opacity:0.4">
+              <circle cx="60" cy="45" r="28" fill="#5c3d2e"/>
+              <path d="M15 120 Q15 85 60 85 Q105 85 105 120" fill="#5c3d2e"/>
+              <ellipse cx="60" cy="22" rx="15" ry="8" fill="#5c3d2e" opacity="0.6"/>
+            </svg>
+          </div>
+        </div>
+        <p class="foto-nama" style="margin-top:45px">Sinta</p>
+      </div>
+    </div>
+
+    <div style="margin-top:60px;max-width:500px;margin-left:auto;margin-right:auto">
+      <p style="font-size:1.05rem;line-height:2;font-style:italic;color:var(--brown)">
+        "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu istri-istri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya"<br>
+        <span style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.15em;opacity:0.7">— QS. Ar-Rum: 21 —</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- TANGGAL -->
+  <section id="tanggal">
+    <!-- Subtle corner ornaments for dark background -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140" opacity="0.15">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#e8d5b0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#f0e0e0" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#c9a96e"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#8fb58f" transform="rotate(12 78 28)"/>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140" opacity="0.15">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#e8d5b0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#f0e0e0" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#c9a96e"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#8fb58f" transform="rotate(12 78 28)"/>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140" opacity="0.15">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#e8d5b0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#f0e0e0" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#c9a96e"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#8fb58f" transform="rotate(12 78 28)"/>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140" opacity="0.15">
+      <ellipse cx="35" cy="35" rx="28" ry="38" fill="#e8d5b0" transform="rotate(-20 35 35)"/>
+      <ellipse cx="58" cy="18" rx="22" ry="32" fill="#f0e0e0" transform="rotate(20 58 18)"/>
+      <circle cx="38" cy="35" r="12" fill="#c9a96e"/>
+      <ellipse cx="78" cy="28" rx="10" ry="30" fill="#8fb58f" transform="rotate(12 78 28)"/>
+    </svg>
+
+    <p class="section-title">HARI ISTIMEWA</p>
+    <h2 class="section-heading" style="color:var(--gold-light)">Tanggal Pernikahan</h2>
+
+    <div class="divider" style="background:linear-gradient(to right,transparent,rgba(232,213,176,0.4),transparent)"></div>
+
+    <div class="tanggal-display">
+      <p class="hari">SABTU</p>
+      <p class="tanggal">14 Juni 2025</p>
+      <p class="tahun">1446 H</p>
+    </div>
+
+    <div class="divider" style="background:linear-gradient(to right,transparent,rgba(232,213,176,0.4),transparent)"></div>
+
+    <p style="font-size:0.85rem;letter-spacing:0.2em;opacity:0.6;font-family:'Cinzel',serif;margin-bottom:2rem">HITUNG MUNDUR</p>
+
+    <div class="countdown-container">
+      <div class="countdown-box">
+        <span class="number" id="days">00</span>
+        <span class="label">HARI</span>
+      </div>
+      <div class="countdown-box">
+        <span class="number" id="hours">00</span>
+        <span class="label">JAM</span>
+      </div>
+      <div class="countdown-box">
+        <span class="number" id="minutes">00</span>
+        <span class="label">MENIT</span>
+      </div>
+      <div class="countdown-box">
+        <span class="number" id="seconds">00</span>
+        <span class="label">DETIK</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOKASI -->
+  <section id="lokasi">
+    <!-- Corner ornaments -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140" opacity="0.45">
+      <ellipse cx="30" cy="30" rx="22" ry="32" fill="#d4a0a0" transform="rotate(-22 30 30)"/>
+      <ellipse cx="52" cy="16" rx="18" ry="26" fill="#c9a96e" transform="rotate(18 52 16)"/>
+      <circle cx="33" cy="31" r="10" fill="#a0706a"/>
+      <ellipse cx="72" cy="24" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 72 24)"/>
+      <ellipse cx="16" cy="74" rx="8" ry="26" fill="#5a7a4e" transform="rotate(-9 16 74)"/>
+      <ellipse cx="80" cy="55" rx="6" ry="10" fill="#d4a0a0" transform="rotate(30 80 55)"/>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140" opacity="0.45">
+      <ellipse cx="30" cy="30" rx="22" ry="32" fill="#d4a0a0" transform="rotate(-22 30 30)"/>
+      <ellipse cx="52" cy="16" rx="18" ry="26" fill="#c9a96e" transform="rotate(18 52 16)"/>
+      <circle cx="33" cy="31" r="10" fill="#a0706a"/>
+      <ellipse cx="72" cy="24" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 72 24)"/>
+      <ellipse cx="16" cy="74" rx="8" ry="26" fill="#5a7a4e" transform="rotate(-9 16 74)"/>
+      <ellipse cx="80" cy="55" rx="6" ry="10" fill="#d4a0a0" transform="rotate(30 80 55)"/>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140" opacity="0.45">
+      <ellipse cx="30" cy="30" rx="22" ry="32" fill="#d4a0a0" transform="rotate(-22 30 30)"/>
+      <ellipse cx="52" cy="16" rx="18" ry="26" fill="#c9a96e" transform="rotate(18 52 16)"/>
+      <circle cx="33" cy="31" r="10" fill="#a0706a"/>
+      <ellipse cx="72" cy="24" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 72 24)"/>
+      <ellipse cx="16" cy="74" rx="8" ry="26" fill="#5a7a4e" transform="rotate(-9 16 74)"/>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140" opacity="0.45">
+      <ellipse cx="30" cy="30" rx="22" ry="32" fill="#d4a0a0" transform="rotate(-22 30 30)"/>
+      <ellipse cx="52" cy="16" rx="18" ry="26" fill="#c9a96e" transform="rotate(18 52 16)"/>
+      <circle cx="33" cy="31" r="10" fill="#a0706a"/>
+      <ellipse cx="72" cy="24" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 72 24)"/>
+      <ellipse cx="16" cy="74" rx="8" ry="26" fill="#5a7a4e" transform="rotate(-9 16 74)"/>
+    </svg>
+
+    <p class="section-title">ACARA</p>
+    <h2 class="section-heading">Lokasi Pernikahan</h2>
+
+    <div class="waktu-grid">
+      <div class="waktu-item">
+        <span class="waktu-label">✦ AKAD NIKAH</span>
+        <div class="waktu-jam">08.00 WIB</div>
+        <div style="font-size:0.8rem;opacity:0.6;margin-top:4px;font-style:italic">s/d selesai</div>
+      </div>
+      <div class="waktu-item">
+        <span class="waktu-label">✦ RESEPSI</span>
+        <div class="waktu-jam">11.00 WIB</div>
+        <div style="font-size:0.8rem;opacity:0.6;margin-top:4px;font-style:italic">s/d 15.00 WIB</div>
+      </div>
+    </div>
+
+    <a href="https://maps.google.com/?q=Gedung+Graha+Sabha+Pramana+Yogyakarta" target="_blank" class="lokasi-card" style="margin-top:1rem">
+      <span class="lokasi-icon">📍</span>
+      <div class="lokasi-nama">Graha Puri Ballroom</div>
+      <div class="lokasi-alamat">
+        Jl. Kenanga Indah No. 88, Kecamatan Lowokwaru,<br>
+        Kota Malang, Jawa Timur 65141
+      </div>
+      <span class="lokasi-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Buka di Google Maps
+      </span>
+    </a>
+  </section>
+
+  <!-- KONFIRMASI KEHADIRAN -->
+  <section id="konfirmasi">
+    <!-- Corner ornaments -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140" opacity="0.4">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#d4a0a0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#c9a96e" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#a0706a"/>
+      <ellipse cx="76" cy="26" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 76 26)"/>
+      <ellipse cx="18" cy="78" rx="8" ry="25" fill="#5a7a4e" transform="rotate(-7 18 78)"/>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140" opacity="0.4">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#d4a0a0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#c9a96e" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#a0706a"/>
+      <ellipse cx="76" cy="26" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 76 26)"/>
+      <ellipse cx="18" cy="78" rx="8" ry="25" fill="#5a7a4e" transform="rotate(-7 18 78)"/>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140" opacity="0.4">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#d4a0a0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#c9a96e" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#a0706a"/>
+      <ellipse cx="76" cy="26" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 76 26)"/>
+      <ellipse cx="18" cy="78" rx="8" ry="25" fill="#5a7a4e" transform="rotate(-7 18 78)"/>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140" opacity="0.4">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#d4a0a0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#c9a96e" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#a0706a"/>
+      <ellipse cx="76" cy="26" rx="9" ry="28" fill="#6b8f5e" transform="rotate(10 76 26)"/>
+      <ellipse cx="18" cy="78" rx="8" ry="25" fill="#5a7a4e" transform="rotate(-7 18 78)"/>
+    </svg>
+
+    <p class="section-title">RSVP</p>
+    <h2 class="section-heading">Konfirmasi Kehadiran</h2>
+    <p style="font-style:italic;color:var(--brown);margin-bottom:2rem;font-size:1rem">Kehadiran Anda adalah anugerah terindah bagi kami</p>
+
+    <div class="konfirmasi-form">
+      <div class="form-group">
+        <label class="form-label">NAMA LENGKAP</label>
+        <input type="text" class="form-input" id="nama" placeholder="Masukkan nama Anda">
+      </div>
+      <div class="form-group">
+        <label class="form-label">JUMLAH TAMU</label>
+        <select class="form-select" id="jumlah">
+          <option value="">Pilih jumlah tamu</option>
+          <option value="1">1 orang</option>
+          <option value="2">2 orang</option>
+          <option value="3">3 orang</option>
+          <option value="4">4 orang</option>
+          <option value="5+">5 orang atau lebih</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">KONFIRMASI KEHADIRAN</label>
+        <select class="form-select" id="hadir">
+          <option value="">Pilih status kehadiran</option>
+          <option value="hadir">✓ Insya Allah Hadir</option>
+          <option value="tidak">✗ Mohon maaf, tidak bisa hadir</option>
+          <option value="belum">? Belum bisa memastikan</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">UCAPAN & DOA</label>
+        <textarea class="form-textarea" id="ucapan" placeholder="Berikan ucapan dan doa untuk kami..."></textarea>
+      </div>
+      <button class="submit-btn" onclick="submitKonfirmasi()">KIRIM KONFIRMASI</button>
+      <div class="success-msg" id="successMsg">
+        🌸 Terima kasih atas konfirmasi Anda! Kami sangat senang bisa berbagi momen bahagia bersama Anda. 🌸
+      </div>
+    </div>
+
+    <!-- Ucapan List -->
+    <div style="margin-top:3rem">
+      <p class="section-title" style="margin-bottom:1rem">UCAPAN & DOA</p>
+      <div class="ucapan-list" id="ucapanList">
+        <!-- Contoh ucapan awal -->
+        <div class="ucapan-item">
+          <div class="ucapan-nama">Budi Santoso — 2 orang</div>
+          <div class="ucapan-hadir">✓ Insya Allah Hadir</div>
+          <div class="ucapan-pesan">"Semoga menjadi keluarga yang sakinah, mawaddah, warahmah. Barakallahu laka wa baraka alayk."</div>
+        </div>
+        <div class="ucapan-item">
+          <div class="ucapan-nama">Ani Rahmawati — 3 orang</div>
+          <div class="ucapan-hadir">✓ Insya Allah Hadir</div>
+          <div class="ucapan-pesan">"Selamat menempuh hidup baru! Semoga pernikahan kalian dipenuhi keberkahan dan kebahagiaan selamanya."</div>
+        </div>
+        <div class="ucapan-item">
+          <div class="ucapan-nama">Rizky Pratama — 1 orang</div>
+          <div class="ucapan-hadir">✗ Mohon maaf, tidak bisa hadir</div>
+          <div class="ucapan-pesan">"Mohon maaf tidak bisa hadir. Doa terbaik selalu untuk kalian berdua. Bahagia selalu ya!"</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PENUTUP -->
+  <section id="penutup">
+    <!-- Corner ornaments penutup -->
+    <svg class="corner-ornament top-left" viewBox="0 0 140 140" opacity="0.12">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#e8d5b0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#f0e0e0" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#c9a96e"/>
+      <ellipse cx="76" cy="26" rx="9" ry="28" fill="#8fb58f" transform="rotate(10 76 26)"/>
+    </svg>
+    <svg class="corner-ornament top-right" viewBox="0 0 140 140" opacity="0.12">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#e8d5b0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#f0e0e0" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#c9a96e"/>
+      <ellipse cx="76" cy="26" rx="9" ry="28" fill="#8fb58f" transform="rotate(10 76 26)"/>
+    </svg>
+    <svg class="corner-ornament bottom-left" viewBox="0 0 140 140" opacity="0.12">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#e8d5b0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#f0e0e0" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#c9a96e"/>
+    </svg>
+    <svg class="corner-ornament bottom-right" viewBox="0 0 140 140" opacity="0.12">
+      <ellipse cx="35" cy="35" rx="26" ry="36" fill="#e8d5b0" transform="rotate(-18 35 35)"/>
+      <ellipse cx="55" cy="18" rx="20" ry="30" fill="#f0e0e0" transform="rotate(22 55 18)"/>
+      <circle cx="37" cy="36" r="11" fill="#c9a96e"/>
+    </svg>
+
+    <div class="divider" style="background:linear-gradient(to right,transparent,rgba(232,213,176,0.3),transparent);margin-bottom:2.5rem"></div>
+
+    <p class="penutup-quote">
+      Merupakan suatu kebahagiaan dan kehormatan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu kepada kami.<br><br>
+      Atas kehadiran dan doa restu Bapak/Ibu/Saudara/i, kami mengucapkan terima kasih yang sebesar-besarnya.
+    </p>
+
+    <div class="divider-rose" style="margin:2rem 0">
+      <div class="line" style="width:80px;background:linear-gradient(to right,transparent,rgba(232,213,176,0.5))"></div>
+      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2 C12 2 18 8 18 13 C18 18 12 22 12 22 C12 22 6 18 6 13 C6 8 12 2 12 2Z" fill="#c9a96e" opacity="0.7"/></svg>
+      <div class="line reverse" style="width:80px;background:linear-gradient(to left,transparent,rgba(232,213,176,0.5))"></div>
+    </div>
+
+    <p class="penutup-thanks">Terima Kasih</p>
+    <p style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.4em;opacity:0.6;margin:0.5rem 0 1rem">DENGAN CINTA</p>
+    <p class="nama-pasangan">Arjuna & Sinta</p>
+
+    <div class="divider" style="background:linear-gradient(to right,transparent,rgba(232,213,176,0.3),transparent);margin-top:2.5rem"></div>
+
+    <p style="font-size:0.75rem;opacity:0.4;margin-top:1.5rem;font-family:'Cinzel',serif;letter-spacing:0.2em">
+      © 2025 • Arjuna & Sinta Wedding
+    </p>
+  </section>
+
+</div>
+
+<!-- Music player button -->
+<div class="music-player" id="musicBtn" onclick="toggleMusic()" title="Musik" style="display:none">
+  🎵
+</div>
+
+<audio id="bgMusic" loop>
+  <!-- Tambahkan URL musik di sini -->
+  <!-- <source src="musik.mp3" type="audio/mpeg"> -->
+</audio>
+
+<script>
+// ===== TIRAI VIDEO — CHROMA KEY (GREENSCREEN DIHAPUS VIA mix-blend-mode) =====
+// Video "tirai_buka.mp4" berisi hanya bagian tirai membuka (0-1.2s)
+// Greenscreen (#00ff00) akan transparan karena mix-blend-mode:multiply di CSS
+// Konten undangan langsung terlihat di bawah tirai
+
+// Setelah video selesai → overlay hilang, konten utama tampil penuh
+document.addEventListener('DOMContentLoaded', function() {
+  const vid     = document.getElementById('curtain-video');
+  const overlay = document.getElementById('curtain-overlay');
+  const bg      = document.getElementById('curtain-bg');
+
+  if (!vid) return;
+
+  // Setelah video selesai putar, fade out overlay sepenuhnya
+  vid.addEventListener('ended', function() {
+    overlay.classList.add('done');
+    document.getElementById('musicBtn').style.display = 'flex';
+    spawnPetals();
+    setTimeout(() => { overlay.style.display = 'none'; }, 700);
+  });
+});
+
+function openCurtain() {
+  const center  = document.getElementById('curtainCenter');
+  const overlay = document.getElementById('curtain-overlay');
+  const bg      = document.getElementById('curtain-bg');
+  const vid     = document.getElementById('curtain-video');
+
+  // 1. Fade out teks & tombol
+  center.classList.add('fade-out');
+  setTimeout(() => { center.style.display = 'none'; }, 450);
+
+  // 2. Kurangi latar hitam secara bertahap agar konten di bawah mulai tampak
+  //    Saat tirai terbuka lebar (greenscreen full), latar hitam sudah 0
+  //    sehingga konten undangan langsung terlihat di balik area hijau yang transparan
+  bg.style.transition = 'opacity 1.0s ease';
+  bg.style.opacity    = '0';
+
+  // 3. Putar video dari awal
+  vid.currentTime = 0;
+  vid.play().catch(() => {
+    // Fallback jika browser blokir autoplay
+    overlay.classList.add('done');
+    document.getElementById('musicBtn').style.display = 'flex';
+    spawnPetals();
+    setTimeout(() => { overlay.style.display = 'none'; }, 700);
+  });
+}
+
+
+// ===== COUNTDOWN =====
+function updateCountdown() {
+  const weddingDate = new Date('2025-06-14T08:00:00');
+  const now = new Date();
+  const diff = weddingDate - now;
+
+  if (diff <= 0) {
+    document.getElementById('days').textContent = '00';
+    document.getElementById('hours').textContent = '00';
+    document.getElementById('minutes').textContent = '00';
+    document.getElementById('seconds').textContent = '00';
+    return;
+  }
+
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+  document.getElementById('days').textContent = String(d).padStart(2, '0');
+  document.getElementById('hours').textContent = String(h).padStart(2, '0');
+  document.getElementById('minutes').textContent = String(m).padStart(2, '0');
+  document.getElementById('seconds').textContent = String(s).padStart(2, '0');
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// ===== KONFIRMASI =====
+function submitKonfirmasi() {
+  const nama = document.getElementById('nama').value.trim();
+  const jumlah = document.getElementById('jumlah').value;
+  const hadir = document.getElementById('hadir').value;
+  const ucapan = document.getElementById('ucapan').value.trim();
+
+  if (!nama || !jumlah || !hadir) {
+    alert('Mohon lengkapi semua kolom yang wajib diisi.');
+    return;
+  }
+
+  // Tambahkan ke daftar ucapan
+  const hadirText = hadir === 'hadir' ? '✓ Insya Allah Hadir' :
+                    hadir === 'tidak' ? '✗ Mohon maaf, tidak bisa hadir' : '? Belum bisa memastikan';
+
+  if (ucapan) {
+    const item = document.createElement('div');
+    item.className = 'ucapan-item';
+    item.innerHTML = `
+      <div class="ucapan-nama">${escapeHtml(nama)} — ${jumlah} orang</div>
+      <div class="ucapan-hadir">${hadirText}</div>
+      <div class="ucapan-pesan">"${escapeHtml(ucapan)}"</div>
+    `;
+    document.getElementById('ucapanList').prepend(item);
+  }
+
+  // Reset form
+  document.getElementById('nama').value = '';
+  document.getElementById('jumlah').value = '';
+  document.getElementById('hadir').value = '';
+  document.getElementById('ucapan').value = '';
+
+  // Show success
+  const msg = document.getElementById('successMsg');
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; }, 4000);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== MUSIC =====
+let musicPlaying = false;
+function toggleMusic() {
+  const music = document.getElementById('bgMusic');
+  const btn = document.getElementById('musicBtn');
+  if (musicPlaying) {
+    music.pause();
+    btn.textContent = '🎵';
+    musicPlaying = false;
+  } else {
+    music.play().catch(() => {});
+    btn.textContent = '🔇';
+    musicPlaying = true;
+  }
+}
+
+// ===== PETAL ANIMATION =====
+const petalColors = ['#d4a0a0','#c9a96e','#e8d5b0','#f0e0e0','#b8896a'];
+function spawnPetals() {
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => createPetal(), i * 200);
+  }
+}
+
+function createPetal() {
+  const petal = document.createElement('div');
+  petal.className = 'petal';
+  petal.style.left = Math.random() * 100 + 'vw';
+  petal.style.background = petalColors[Math.floor(Math.random() * petalColors.length)];
+  petal.style.animationDuration = (3 + Math.random() * 4) + 's';
+  petal.style.animationDelay = (Math.random() * 2) + 's';
+  petal.style.width = (8 + Math.random() * 12) + 'px';
+  petal.style.height = (8 + Math.random() * 12) + 'px';
+  document.body.appendChild(petal);
+  setTimeout(() => petal.remove(), 8000);
+}
+
+// ===== SCROLL ANIMATION =====
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('section').forEach(section => {
+  section.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+  section.style.opacity = '0';
+  section.style.transform = 'translateY(20px)';
+  observer.observe(section);
+});
+</script>
+</body>
+</html>
