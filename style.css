@@ -1,0 +1,391 @@
+/*
+ * ============================================================
+ *  TIRAI ANIMASI — Pure CSS Curtain Transition
+ *  Cara pakai:
+ *    1. Tambahkan <link rel="stylesheet" href="tirai-animasi.css"> di <head>
+ *    2. Salin struktur HTML di bawah ke dalam <body> (sebelum konten utama)
+ *    3. Panggil openCurtain() saat tombol diklik
+ * ------------------------------------------------------------
+ *  HTML yang diperlukan:
+ *
+ *  <div id="curtain-overlay">
+ *    <div class="curtain-panel curtain-left">
+ *      <div class="curtain-fold f1"></div>
+ *      <div class="curtain-fold f2"></div>
+ *      <div class="curtain-fold f3"></div>
+ *      <div class="curtain-fold f4"></div>
+ *      <div class="curtain-fringe"></div>
+ *    </div>
+ *    <div class="curtain-panel curtain-right">
+ *      <div class="curtain-fold f1"></div>
+ *      <div class="curtain-fold f2"></div>
+ *      <div class="curtain-fold f3"></div>
+ *      <div class="curtain-fold f4"></div>
+ *      <div class="curtain-fringe"></div>
+ *    </div>
+ *    <div class="curtain-top-bar"></div>
+ *    <div class="curtain-valance">
+ *      <div class="valance-swag s1"></div>
+ *      <div class="valance-swag s2"></div>
+ *      <div class="valance-swag s3"></div>
+ *    </div>
+ *  </div>
+ *
+ *  <div class="curtain-center" id="curtainCenter">
+ *    <h1>Nama & Nama</h1>
+ *    <button class="open-btn" onclick="openCurtain()">✦ Buka Undangan ✦</button>
+ *  </div>
+ *
+ * ------------------------------------------------------------
+ *  JavaScript minimal yang diperlukan:
+ *
+ *  function openCurtain() {
+ *    document.getElementById('curtainCenter').classList.add('fade-out');
+ *    document.getElementById('curtain-overlay').classList.add('open');
+ *    setTimeout(() => {
+ *      document.getElementById('curtain-overlay').style.display = 'none';
+ *    }, 2200);
+ *  }
+ * ============================================================
+ */
+
+/* ─── Variabel warna tirai ─── */
+:root {
+  --tirai-merah:      #8b0000;
+  --tirai-merah-mid:  #a01515;
+  --tirai-merah-tepi: #600000;
+  --tirai-lipatan:    #6a0000;
+  --tirai-sorot:      rgba(255, 180, 100, 0.18);
+  --tirai-emas:       #c9a96e;
+  --tirai-emas-tua:   #8a6830;
+  --tirai-fringe:     #b8903a;
+  --tirai-shadow:     rgba(0, 0, 0, 0.6);
+  --ease-tirai:       cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+/* ─── Overlay wrapper ─── */
+#curtain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: all;
+  overflow: hidden;
+  display: flex;
+}
+
+/* ─── Dua panel tirai (kiri & kanan) ─── */
+.curtain-panel {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  /* Gradien dasar — simulasi kain beludru lipat */
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--tirai-lipatan)     0px,
+      var(--tirai-merah-mid)   18px,
+      var(--tirai-merah)       36px,
+      var(--tirai-merah-mid)   54px,
+      var(--tirai-lipatan)     72px
+    );
+
+  /* Bayangan tepi luar agar terlihat dalam */
+  box-shadow: inset 0 0 80px rgba(0,0,0,0.5);
+  transition:
+    width 1.6s var(--ease-tirai),
+    transform 1.6s var(--ease-tirai),
+    box-shadow 1.6s ease;
+}
+
+/* Sorotan cahaya atas */
+.curtain-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0; right: 0;
+  height: 35%;
+  background: radial-gradient(ellipse at 50% 0%, var(--tirai-sorot) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Bayangan tengah (celah antar tirai) */
+.curtain-panel::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, rgba(0,0,0,0.5), transparent);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.curtain-left::after  { right: 0; transform: scaleX(-1); }
+.curtain-right::after { left: 0; }
+
+/* ─── Panel kiri: slide ke kiri ─── */
+.curtain-left {
+  transform-origin: left center;
+}
+
+/* ─── Panel kanan: slide ke kanan ─── */
+.curtain-right {
+  transform-origin: right center;
+}
+
+/* ─── Lipatan kain (fold stripes) ─── */
+.curtain-fold {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 14px;
+  background: linear-gradient(to right,
+    rgba(0,0,0,0.35) 0%,
+    rgba(255,255,255,0.06) 50%,
+    rgba(0,0,0,0.2) 100%
+  );
+  border-radius: 50% / 0;
+  pointer-events: none;
+  z-index: 2;
+  animation: foldSway 4s ease-in-out infinite alternate;
+}
+
+.curtain-left  .f1 { left: 12%; animation-delay: 0s; }
+.curtain-left  .f2 { left: 30%; animation-delay: 0.4s; }
+.curtain-left  .f3 { left: 55%; animation-delay: 0.8s; }
+.curtain-left  .f4 { left: 75%; animation-delay: 1.2s; }
+.curtain-right .f1 { left: 12%; animation-delay: 0.2s; }
+.curtain-right .f2 { left: 30%; animation-delay: 0.6s; }
+.curtain-right .f3 { left: 55%; animation-delay: 1.0s; }
+.curtain-right .f4 { left: 75%; animation-delay: 1.4s; }
+
+@keyframes foldSway {
+  0%   { transform: scaleX(1) translateX(0); opacity: 0.8; }
+  100% { transform: scaleX(1.3) translateX(2px); opacity: 1; }
+}
+
+/* ─── Renda / fringe bawah tirai ─── */
+.curtain-fringe {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  height: 28px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--tirai-fringe)         0px,
+      var(--tirai-emas)           4px,
+      var(--tirai-fringe)         8px
+    );
+  clip-path: polygon(
+    0% 0%, 3.33% 0%, 3.33% 60%, 5% 100%,
+    6.67% 60%, 6.67% 0%, 10% 0%, 10% 60%, 11.67% 100%,
+    13.33% 60%, 13.33% 0%, 16.67% 0%, 16.67% 60%, 18.33% 100%,
+    20% 60%, 20% 0%, 23.33% 0%, 23.33% 60%, 25% 100%,
+    26.67% 60%, 26.67% 0%, 30% 0%, 30% 60%, 31.67% 100%,
+    33.33% 60%, 33.33% 0%, 36.67% 0%, 36.67% 60%, 38.33% 100%,
+    40% 60%, 40% 0%, 43.33% 0%, 43.33% 60%, 45% 100%,
+    46.67% 60%, 46.67% 0%, 50% 0%, 50% 60%, 51.67% 100%,
+    53.33% 60%, 53.33% 0%, 56.67% 0%, 56.67% 60%, 58.33% 100%,
+    60% 60%, 60% 0%, 63.33% 0%, 63.33% 60%, 65% 100%,
+    66.67% 60%, 66.67% 0%, 70% 0%, 70% 60%, 71.67% 100%,
+    73.33% 60%, 73.33% 0%, 76.67% 0%, 76.67% 60%, 78.33% 100%,
+    80% 60%, 80% 0%, 83.33% 0%, 83.33% 60%, 85% 100%,
+    86.67% 60%, 86.67% 0%, 90% 0%, 90% 60%, 91.67% 100%,
+    93.33% 60%, 93.33% 0%, 96.67% 0%, 96.67% 60%, 98.33% 100%,
+    100% 60%, 100% 0%
+  );
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* ─── Rel atas (curtain rod / top bar) ─── */
+.curtain-top-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 22px;
+  background: linear-gradient(to bottom,
+    #6b4f1a 0%,
+    var(--tirai-emas) 40%,
+    #9a7030 60%,
+    var(--tirai-emas-tua) 100%
+  );
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.5),
+    inset 0 2px 3px rgba(255,255,255,0.25);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* Ujung rel kiri & kanan */
+.curtain-top-bar::before,
+.curtain-top-bar::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  width: 30px; height: 30px;
+  background: radial-gradient(circle, var(--tirai-emas) 40%, var(--tirai-emas-tua) 100%);
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.curtain-top-bar::before { left: -4px; }
+.curtain-top-bar::after  { right: -4px; }
+
+/* ─── Valance (hiasan swag atas) ─── */
+.curtain-valance {
+  position: absolute;
+  top: 22px; /* tepat di bawah rel */
+  left: 0; right: 0;
+  height: 90px;
+  z-index: 9999;
+  display: flex;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.valance-swag {
+  flex: 1;
+  background:
+    radial-gradient(ellipse at 50% 0%,
+      var(--tirai-merah-mid) 0%,
+      var(--tirai-merah-tepi) 70%,
+      transparent 100%
+    );
+  clip-path: ellipse(55% 100% at 50% 0%);
+  position: relative;
+}
+
+/* Sorot emas di setiap swag */
+.valance-swag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(201,169,110,0.25) 0%,
+    transparent 60%
+  );
+  clip-path: inherit;
+}
+
+/* Tali/knot antara swag */
+.valance-swag + .valance-swag::before {
+  content: '';
+  position: absolute;
+  left: -6px; top: 0;
+  width: 12px; height: 30px;
+  background: radial-gradient(ellipse at 50% 40%, var(--tirai-emas) 30%, var(--tirai-emas-tua) 100%);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* ─── ANIMASI BUKA ─── */
+
+/* Kiri geser ke kiri */
+#curtain-overlay.open .curtain-left {
+  transform: translateX(-100%);
+  box-shadow: none;
+  transition:
+    transform 1.5s var(--ease-tirai),
+    box-shadow 0.8s ease;
+}
+
+/* Kanan geser ke kanan */
+#curtain-overlay.open .curtain-right {
+  transform: translateX(100%);
+  box-shadow: none;
+  transition:
+    transform 1.5s var(--ease-tirai),
+    box-shadow 0.8s ease;
+}
+
+/* Tirai saat menutup: ada sedikit "tarikan" ke tengah dulu */
+.curtain-left {
+  animation: curtainBreath 3s ease-in-out infinite alternate;
+}
+.curtain-right {
+  animation: curtainBreath 3s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes curtainBreath {
+  0%   { transform: translateX(0px); }
+  100% { transform: translateX(3px); }
+}
+
+/* Hentikan napas saat mulai buka */
+#curtain-overlay.open .curtain-left,
+#curtain-overlay.open .curtain-right {
+  animation: none;
+}
+
+/* Valance ikut naik sedikit saat tirai buka */
+#curtain-overlay.open .curtain-valance {
+  transition: opacity 0.4s ease 0.8s;
+  opacity: 0;
+}
+
+/* ─── Teks & tombol overlay ─── */
+.curtain-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  text-align: center;
+  width: 90%;
+  max-width: 420px;
+  pointer-events: none;
+  /* Animasi masuk saat halaman load */
+  animation: curtainCenterIn 1s ease 0.3s both;
+}
+
+@keyframes curtainCenterIn {
+  from { opacity: 0; transform: translate(-50%, -44%); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.curtain-center.fade-out {
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  opacity: 0;
+  transform: translate(-50%, -46%);
+  pointer-events: none;
+}
+
+/* ─── Shimmer: kilau cahaya menyapu tirai ─── */
+.curtain-panel .curtain-shimmer {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 60px;
+  background: linear-gradient(to right,
+    transparent 0%,
+    rgba(255,220,150,0.18) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 3;
+  animation: shimmerSlide 5s ease-in-out infinite;
+}
+
+@keyframes shimmerSlide {
+  0%   { left: -80px; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: calc(100% + 80px); opacity: 0; }
+}
+
+.curtain-left  .curtain-shimmer { animation-delay: 0s; }
+.curtain-right .curtain-shimmer { animation-delay: 2.5s; }
+
+/* Hentikan shimmer saat buka */
+#curtain-overlay.open .curtain-shimmer {
+  animation: none;
+  opacity: 0;
+}
+
+/* ─── Responsif mobile ─── */
+@media (max-width: 600px) {
+  .curtain-valance { height: 60px; }
+  .curtain-top-bar { height: 16px; }
+  .curtain-fringe  { height: 20px; }
+}
