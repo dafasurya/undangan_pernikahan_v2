@@ -549,7 +549,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 40px;
+      gap: 80px;
       flex-wrap: wrap;
       max-width: 900px;
       margin: 2.5rem auto 0;
@@ -598,15 +598,14 @@
     .foto-name-tag {
       position: absolute;
       bottom: -55px;
-      /* Angka ini diperbesar minusnya agar posisi teks lebih turun (sebelumnya -36px) */
       left: 50%;
       transform: translateX(-50%);
       font-family: 'Great Vibes', cursive;
-      font-size: 3.5rem;
-      /* Ukuran font diperbesar (sebelumnya 2rem) */
+      font-size: 3rem;
       color: var(--brown-dark);
       white-space: nowrap;
       letter-spacing: 0.02em;
+      pointer-events: none;
     }
 
     .foto-and-text {
